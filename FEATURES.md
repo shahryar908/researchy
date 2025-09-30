@@ -1,7 +1,7 @@
 # Research Project - Features Documentation
 
 ## Overview
-A comprehensive AI-powered research assistant platform that enables users to search, analyze, and generate academic research papers with integrated conversation management and real-time chat interface.
+A comprehensive AI-powered research assistant platform that enables users to search, analyze, and generate academic research papers with advanced streaming capabilities, intelligent conversation management, and enterprise-ready performance.
 
 ---
 
@@ -12,29 +12,47 @@ A comprehensive AI-powered research assistant platform that enables users to sea
 - **User Registration**: Sign up/Sign in functionality
 - **Session Management**: Persistent user sessions across the platform
 - **Profile Management**: User avatar and profile information via Clerk
+- **Multi-user Support**: Isolated conversations per user with proper data segregation
 
-### 2. **Research Chat Interface**
-- **Real-time Chat**: Interactive conversation interface with the AI research agent
-- **Message History**: Persistent conversation storage with timestamps
-- **Conversation Management**: 
-  - Create new research sessions
-  - View conversation history
-  - Delete conversations
-  - Switch between multiple conversations
-- **Responsive UI**: Modern gradient design with Tailwind CSS
-- **Message Features**:
-  - Copy message content
-  - Like/thumbs up messages
-  - Tool call visualization
+### 2. **Advanced Streaming Chat Interface**
+- **Real-time Token Streaming**: Live word-by-word response generation using Gemini's native streaming
+- **Server-Sent Events (SSE)**: Standards-compliant streaming with proper buffering and chunk handling
+- **ReadableStream Processing**: Frontend handles streaming data with TextDecoder for real-time display
+- **Interactive UI**: Modern gradient design with streaming indicators and visual feedback
+- **Conversation Continuity**: Conversations survive server restarts with persistent state
+- **Intelligent Conversation Management**: 
+  - Create new research sessions with AI-generated titles (like Claude)
+  - View conversation history with optimized loading
+  - Delete conversations with cascade cleanup
+  - Switch between multiple conversations seamlessly
+  - Auto-generated conversation names based on content analysis
+- **Enhanced Message Features**:
+  - Copy message content to clipboard
+  - Like/thumbs up messages for feedback
+  - Real-time tool execution visualization
   - Auto-scrolling to new messages
   - Multi-line input support (Shift+Enter)
+  - Typing indicators during streaming
+  - Error recovery and retry mechanisms
+  - Streaming message bubbles with live content updates
 
 ### 3. **AI Research Agent (LangGraph + Google Gemini)**
-- **Advanced LLM**: Google Gemini 2.5 Pro integration
-- **Conversational AI**: Context-aware responses with conversation memory
+- **Advanced LLM**: Google Gemini 2.5 Pro integration with streaming support
+- **Conversational AI**: Context-aware responses with optimized conversation memory
 - **Multi-step Reasoning**: LangGraph workflow for complex research tasks
-- **Tool Integration**: Seamless tool calling and execution
-- **State Management**: Persistent conversation state with checkpointing
+- **Tool Integration**: Seamless tool calling and execution with real-time feedback
+- **State Management**: Optimized conversation state with unique thread handling
+- **Advanced State Management**:
+  - Unique thread IDs to prevent LangGraph state conflicts
+  - Memory-based conversation checkpointing with MemorySaver
+  - Conversation state persistence across server restarts
+  - Thread isolation to handle concurrent user sessions
+- **Performance Optimizations**:
+  - Smart conversation history truncation (last 6 messages)
+  - 30-second conversation caching for faster loading
+  - Optimized database queries with relationship preloading
+  - Reduced API timeouts for faster responses
+  - Efficient SSE buffering to handle streaming data chunks
 
 ### 4. **Research Tools & Capabilities**
 
@@ -67,8 +85,8 @@ A comprehensive AI-powered research assistant platform that enables users to sea
 All endpoints below require valid Clerk session with `requireAuth` middleware:
 
 - `GET /protected` - Test route with user data and conversation count
-- `POST /api/research/chat` - Send messages to research agent
-- `POST /api/research/chat/stream` - Streaming chat responses (SSE)
+- `POST /api/research/chat` - Send messages to research agent (non-streaming)
+- `POST /api/research/chat/stream` - **Real-time streaming chat responses** (SSE)
 - `GET /api/research/history` - Retrieve conversation history (with optional conversationId)
 - `GET /api/research/conversations` - List all user conversations with metadata
 - `POST /api/research/conversations/new` - Create new conversation
@@ -76,15 +94,25 @@ All endpoints below require valid Clerk session with `requireAuth` middleware:
 - `GET /api/research/papers/:filename` - Download generated PDF papers
 - `GET /api/research/papers` - List all generated papers
 
+#### 🔒 **Internal Endpoints (Server-to-Server)**
+- `GET /internal/conversation/:conversationId/history` - Internal conversation history access
+
 #### 🤖 **AI Agent API (FastAPI) - Port 8000**
-**Public Endpoints (No Authentication):**
+**Public Endpoints (Internal Use Only):**
 - `GET /` - API status and info
 - `GET /health` - Health check endpoint
 - `POST /api/chat` - Process chat messages (called by Express backend)
+- `POST /api/chat/stream` - **Real-time streaming responses** with astream_events
+- `POST /api/generate-title` - **Intelligent conversation title generation**
 - `GET /api/papers/download/{filename}` - Download PDF papers
 - `GET /api/papers/list` - List generated papers
 
-**Note:** FastAPI endpoints are called internally by Express backend, not directly by frontend.
+**Advanced Features:**
+- **Real-time Streaming**: Token-by-token streaming using LangGraph's astream_events
+- **Intelligent Title Generation**: AI-powered conversation naming using Gemini analysis
+- **Tool Execution Tracking**: Live progress updates during research tasks
+- **State Persistence**: Conversation memory with unique thread management
+- **Async Processing**: Non-blocking operations with FastAPI async/await
 
 ### 6. **Database & Storage (Prisma + SQLite)**
 
@@ -166,11 +194,15 @@ All endpoints below require valid Clerk session with `requireAuth` middleware:
 ---
 
 ## 📈 **Performance Features**
-- **Streaming Responses**: Real-time chat updates
-- **Connection Pooling**: Efficient database connections
-- **Memory Management**: LangGraph state persistence
-- **Async Processing**: Non-blocking API operations
-- **Error Recovery**: Graceful failure handling
+- **Real-time Streaming**: Token-by-token response streaming with SSE
+- **Conversation Caching**: 30-second cache for faster conversation loading
+- **Unique Thread Management**: Prevents LangGraph state conflicts between users
+- **Smart History Truncation**: Optimized memory usage with last 6 messages
+- **Connection Pooling**: Efficient database connections with Prisma
+- **Async Processing**: Non-blocking API operations with FastAPI
+- **Error Recovery**: Graceful failure handling with retry mechanisms
+- **Optimized Queries**: Database relationship preloading for faster responses
+- **SSE Buffering**: Efficient streaming data chunk handling
 
 ---
 

@@ -5,11 +5,24 @@ import 'dotenv/config';
 import { clerkMiddleware, getAuth, clerkClient } from '@clerk/express';
 import { PrismaClient, Prisma } from './generated/prisma';
 import axios, { AxiosResponse } from 'axios';
+import { createClient } from '@supabase/supabase-js';
 
 const app = express();
 const prisma = new PrismaClient();
 
 const FASTAPI_URL = 'http://localhost:8000';
+
+// Initialize Supabase client
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+
+let supabase: any = null;
+if (supabaseUrl && supabaseServiceKey) {
+    supabase = createClient(supabaseUrl, supabaseServiceKey);
+    console.log('✅ Supabase client initialized');
+} else {
+    console.log('⚠️  Supabase not configured - PDFs will be served locally');
+}
 
 app.use(cors({
     origin: 'http://localhost:3000',
@@ -134,6 +147,70 @@ async function saveMessage(
     });
 }
 
+async function generateConversationTitle(conversation: any, firstMessage: string, response: string) {
+    try {
+        console.log(`DEBUG: generateConversationTitle called for conversation ${conversation.id}`);
+        console.log(`DEBUG: Current title: "${conversation.title}"`);
+        console.log(`DEBUG: First message: "${firstMessage}"`);
+        console.log(`DEBUG: Response length: ${response?.length || 0}`);
+
+        // Only generate title for conversations that still have default title
+        if (conversation.title !== 'New Research Session' && conversation.title !== null) {
+            console.log('DEBUG: Conversation already has custom title, skipping');
+            return; // Already has a custom title
+        }
+
+        // Check if this is actually the first exchange
+        const messageCount = await prisma.message.count({
+            where: { conversationId: conversation.id }
+        });
+
+        console.log(`DEBUG: Message count in conversation: ${messageCount}`);
+
+        // Generate title for conversations with few messages (first few exchanges)
+        if (messageCount <= 4) { // Allow title generation for first 2 exchanges
+            console.log('Generating title for new conversation...');
+            
+            try {
+                const titleResponse = await axios.post(`${FASTAPI_URL}/api/generate-title`, {
+                    first_message: firstMessage,
+                    response: response
+                }, {
+                    timeout: 10000 // 10 second timeout
+                });
+
+                const newTitle = titleResponse.data.title;
+                console.log(`DEBUG: Received title from API: "${newTitle}"`);
+                
+                // Update conversation with generated title
+                await prisma.conversation.update({
+                    where: { id: conversation.id },
+                    data: { title: newTitle }
+                });
+
+                console.log(`✅ Generated title: "${newTitle}" for conversation ${conversation.id}`);
+            } catch (apiError: any) {
+                console.error('DEBUG: FastAPI title generation failed:', apiError.message);
+                throw apiError; // This will trigger the fallback
+            }
+        } else {
+            console.log('DEBUG: Skipping title generation - too many messages');
+        }
+    } catch (error) {
+        console.error('Error generating conversation title:', error);
+        // Fallback: use first few words of the message
+        try {
+            const fallbackTitle = firstMessage.split(' ').slice(0, 4).join(' ');
+            await prisma.conversation.update({
+                where: { id: conversation.id },
+                data: { title: fallbackTitle || 'Research Conversation' }
+            });
+        } catch (fallbackError) {
+            console.error('Error setting fallback title:', fallbackError);
+        }
+    }
+}
+
 // ==================== API ROUTES ====================
 
 // Test route
@@ -235,6 +312,10 @@ app.post("/api/research/chat", requireAuth, async (req: Request, res: Response) 
             response.data.tool_calls
         );
 
+        // Generate title for new conversations AFTER saving message
+        console.log('DEBUG: About to call generateConversationTitle (non-streaming)');
+        generateConversationTitle(conversation, message, response.data.response);
+
         // Update conversation timestamp
         await prisma.conversation.update({
             where: { id: conversation.id },
@@ -259,26 +340,105 @@ app.post("/api/research/chat", requireAuth, async (req: Request, res: Response) 
 app.post("/api/research/chat/stream", requireAuth, async (req: Request, res: Response) => {
     try {
         const { userId } = req as AuthRequest;
-        const { message } = req.body;
+        const { message, conversationId } = req.body;
 
         if (!message || typeof message !== 'string') {
             return res.status(400).json({ error: "Message is required" });
         }
 
-        // Set SSE headers
+        // Get or create conversation
+        const { user, conversation } = await getOrCreateConversation(userId);
+
+        // Save user message to database first
+        await saveMessage(conversation.id, user.id, "user", message);
+
+        // Set proper SSE headers
         res.setHeader('Content-Type', 'text/event-stream');
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
+        res.setHeader('X-Accel-Buffering', 'no'); // Disable proxy buffering
+        res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+        
+        // Send initial connection event
+        res.write(': Connected to chat stream\n\n');
 
         // Call FastAPI streaming endpoint
         const response = await axios.post(
             `${FASTAPI_URL}/api/chat/stream`,
-            { user_id: userId, message },
+            { 
+                user_id: userId, 
+                conversation_id: conversationId || conversation.id, 
+                message 
+            },
             { responseType: 'stream' }
         );
 
-        // Pipe the stream to client
-        response.data.pipe(res);
+        let assistantMessage = "";
+        let toolCallsData = null;
+        let streamBuffer = ""; // Buffer to accumulate partial SSE data
+
+        // Process streaming data and save final response
+        response.data.on('data', (chunk: Buffer) => {
+            const data = chunk.toString();
+            res.write(data);
+
+            // Add to buffer and process complete lines
+            streamBuffer += data;
+            const lines = streamBuffer.split('\n');
+            
+            // Keep the last potentially incomplete line in buffer
+            streamBuffer = lines.pop() || "";
+
+            // Parse complete SSE lines
+            for (const line of lines) {
+                if (line.startsWith('data: ') && line.trim() !== 'data:') {
+                    try {
+                        const jsonStr = line.substring(6).trim();
+                        if (jsonStr) {
+                            const jsonData = JSON.parse(jsonStr);
+                            
+                            if (jsonData.type === 'content') {
+                                assistantMessage += jsonData.content;
+                            } else if (jsonData.type === 'tool_calls') {
+                                toolCallsData = jsonData.tool_calls;
+                            } else if (jsonData.type === 'complete') {
+                                // Save complete assistant response to database
+                                saveMessage(
+                                    conversation.id,
+                                    user.id,
+                                    "assistant",
+                                    jsonData.response,
+                                    toolCallsData
+                                ).then(() => {
+                                    // Generate title for new conversations AFTER saving message
+                                    generateConversationTitle(conversation, message, jsonData.response);
+                                }).catch(err => console.error('Error saving message:', err));
+
+                                // Update conversation timestamp
+                                prisma.conversation.update({
+                                    where: { id: conversation.id },
+                                    data: { updatedAt: new Date() }
+                                }).catch(err => console.error('Error updating conversation:', err));
+                            }
+                        }
+                    } catch (parseError) {
+                        // Ignore parse errors for partial data
+                    }
+                }
+            }
+        });
+
+        response.data.on('end', () => {
+            res.end();
+        });
+
+        response.data.on('error', (error: any) => {
+            console.error('Stream error:', error);
+            res.write(`data: ${JSON.stringify({ type: "error", error: "Stream failed" })}\n\n`);
+            res.end();
+        });
+
     } catch (error: any) {
         console.error('Error streaming from FastAPI:', error);
         res.status(500).json({ error: "Failed to stream response" });
@@ -453,8 +613,42 @@ app.delete("/api/research/conversations/:conversationId", requireAuth, async (re
 // Download generated paper
 app.get("/api/research/papers/:filename", requireAuth, async (req: Request, res: Response) => {
     try {
+        const { userId } = req as AuthRequest;
         const { filename } = req.params;
 
+        // Try Supabase first if configured
+        if (supabase) {
+            try {
+                console.log(`Attempting to download from Supabase: ${userId}/${filename}`);
+                
+                const { data: fileData, error } = await supabase.storage
+                    .from('researchy')
+                    .download(`${userId}/${filename}`);
+
+                if (error) {
+                    console.log(`Supabase download error: ${error.message}`);
+                    throw error;
+                }
+
+                if (fileData) {
+                    console.log(`✅ Successfully downloaded from Supabase: ${filename}`);
+                    
+                    // Convert blob to buffer
+                    const buffer = Buffer.from(await fileData.arrayBuffer());
+                    
+                    res.setHeader('Content-Type', 'application/pdf');
+                    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+                    res.setHeader('Content-Length', buffer.length.toString());
+                    
+                    return res.send(buffer);
+                }
+            } catch (supabaseError: any) {
+                console.log(`Supabase download failed, falling back to FastAPI: ${supabaseError.message}`);
+            }
+        }
+
+        // Fallback to FastAPI/local storage
+        console.log(`Downloading from FastAPI: ${filename}`);
         const response = await axios.get(
             `${FASTAPI_URL}/api/papers/download/${filename}`,
             { responseType: 'stream' }
@@ -464,25 +658,95 @@ app.get("/api/research/papers/:filename", requireAuth, async (req: Request, res:
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
         
         response.data.pipe(res);
+        
     } catch (error: any) {
         console.error('Error downloading paper:', error);
         
         if (error.response?.status === 404) {
-            return res.status(404).json({ error: "Paper not found" });
+            return res.status(404).json({ 
+                error: "Paper not found",
+                detail: "The requested PDF file could not be found in storage"
+            });
         }
         
-        res.status(500).json({ error: "Failed to download paper" });
+        res.status(500).json({ 
+            error: "Failed to download paper",
+            detail: error.message
+        });
     }
 });
 
 // List all papers
 app.get("/api/research/papers", requireAuth, async (req: Request, res: Response) => {
     try {
-        const response: AxiosResponse<{ papers: any[]; count: number }> = await axios.get(
-            `${FASTAPI_URL}/api/papers/list`
-        );
+        const { userId } = req as AuthRequest;
+        let allPapers: any[] = [];
+
+        // Try to get papers from Supabase first
+        if (supabase) {
+            try {
+                const { data: supabaseFiles, error } = await supabase.storage
+                    .from('researchy')
+                    .list(`${userId}/`, {
+                        limit: 100,
+                        sortBy: { column: 'created_at', order: 'desc' }
+                    });
+
+                if (!error && supabaseFiles) {
+                    const pdfFiles = supabaseFiles.filter((file: any) => 
+                        file.name && file.name.toLowerCase().endsWith('.pdf')
+                    );
+                    
+                    allPapers = pdfFiles.map((file: any) => ({
+                        filename: file.name,
+                        path: `supabase:${userId}/${file.name}`,
+                        size: file.metadata?.size || 0,
+                        created: file.created_at,
+                        source: 'supabase'
+                    }));
+                    
+                    console.log(`Found ${allPapers.length} papers in Supabase for user ${userId}`);
+                }
+            } catch (supabaseError: any) {
+                console.log(`Error listing Supabase papers: ${supabaseError.message}`);
+            }
+        }
+
+        // Also get papers from FastAPI/local storage as fallback
+        try {
+            const response: AxiosResponse<{ papers: any[]; count: number }> = await axios.get(
+                `${FASTAPI_URL}/api/papers/list`
+            );
+            
+            if (response.data.papers) {
+                const localPapers = response.data.papers.map((paper: any) => ({
+                    ...paper,
+                    source: 'local'
+                }));
+                allPapers = [...allPapers, ...localPapers];
+            }
+        } catch (fastApiError: any) {
+            console.log(`Error listing local papers: ${fastApiError.message}`);
+        }
+
+        // Remove duplicates based on filename
+        const uniquePapers = allPapers.reduce((acc: any[], paper: any) => {
+            const exists = acc.find(p => p.filename === paper.filename);
+            if (!exists) {
+                acc.push(paper);
+            }
+            return acc;
+        }, []);
+
+        res.json({
+            papers: uniquePapers,
+            count: uniquePapers.length,
+            sources: {
+                supabase: allPapers.filter(p => p.source === 'supabase').length,
+                local: allPapers.filter(p => p.source === 'local').length
+            }
+        });
         
-        res.json(response.data);
     } catch (error: any) {
         console.error('Error listing papers:', error);
         res.status(500).json({ error: "Failed to list papers" });
