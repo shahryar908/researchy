@@ -1,7 +1,22 @@
-# Research Project - Features Documentation
+# Researchy - AI Research Assistant Platform
 
 ## Overview
-A comprehensive AI-powered research assistant platform that enables users to search, analyze, and generate academic research papers with advanced streaming capabilities, intelligent conversation management, and enterprise-ready performance.
+Researchy is a comprehensive AI-powered research assistant platform that enables users to search, analyze, and generate academic research papers. Built with a modern tech stack including Next.js 15, Express.js, FastAPI, and LangGraph, it provides an intelligent conversational interface with real-time streaming capabilities, intelligent conversation management, and cloud storage integration.
+
+### Architecture Overview
+```
+┌─────────────┐      ┌──────────────┐      ┌───────────────┐
+│   Next.js   │─────▶│  Express.js  │─────▶│    FastAPI    │
+│  Frontend   │      │   Backend    │      │   AI Agent    │
+│  (Port 3000)│      │  (Port 3001) │      │  (Port 8000)  │
+└─────────────┘      └──────────────┘      └───────────────┘
+                            │                       │
+                            ▼                       ▼
+                     ┌──────────────┐      ┌───────────────┐
+                     │    SQLite    │      │   Supabase    │
+                     │   (Prisma)   │      │    Storage    │
+                     └──────────────┘      └───────────────┘
+```
 
 ---
 
@@ -114,56 +129,112 @@ All endpoints below require valid Clerk session with `requireAuth` middleware:
 - **State Persistence**: Conversation memory with unique thread management
 - **Async Processing**: Non-blocking operations with FastAPI async/await
 
-### 6. **Database & Storage (Prisma + SQLite)**
+### 6. **Database & Storage (Prisma + SQLite + Supabase)**
 
 #### 📊 **Data Models**
-- **Users**: Clerk integration with profile data
-- **Conversations**: Research session management
-- **Messages**: Chat history with metadata
-- **Relationships**: Proper foreign key constraints and cascading deletes
+```prisma
+User {
+  id: string (cuid)
+  clerkUserId: string (unique)
+  email?: string
+  firstName?: string
+  lastName?: string
+  conversations: Conversation[]
+  messages: Message[]
+}
+
+Conversation {
+  id: string (cuid)
+  userId: string (foreign key)
+  threadId: string (unique - LangGraph state)
+  title?: string (auto-generated)
+  messages: Message[]
+}
+
+Message {
+  id: string (cuid)
+  conversationId: string (foreign key)
+  userId: string (foreign key)
+  role: "user" | "assistant" | "system"
+  content: string
+  toolCalls?: JSON (tool execution data)
+  metadata?: JSON
+  timestamp: DateTime
+}
+```
 
 #### 🔄 **Data Features**
 - **Auto-timestamps**: Created/updated tracking
 - **JSON Support**: Tool calls and metadata storage
-- **Migration System**: Database schema versioning
+- **Migration System**: Database schema versioning with Prisma
 - **Connection Pooling**: Efficient database connections
+- **Cascade Deletes**: Clean up related data automatically
 
-### 7. **File Management & Output**
-- **PDF Generation**: LaTeX compilation to PDF format
-- **File Downloads**: Secure file serving with proper headers
-- **Output Directories**: Organized file storage (`./output`, `./pdfs`)
-- **File Listings**: API to browse generated papers
+#### ☁️ **Supabase Cloud Storage Integration**
+- **Automatic Upload**: PDFs auto-uploaded to Supabase Storage after generation
+- **User Buckets**: Organized storage per user (`{userId}/{filename}.pdf`)
+- **Public URLs**: Shareable links for generated papers
+- **Fallback Storage**: Local filesystem backup if Supabase unavailable
+- **Dual Retrieval**: Download from Supabase first, fallback to local
+- **Bucket Management**: Auto-creation of `researchy` bucket
+- **Error Handling**: Graceful degradation with detailed logging
+
+### 7. **File Management & PDF Download System**
+- **LaTeX to PDF**: Tectonic compiler for professional paper generation
+- **Timestamped Files**: `paper_YYYYMMDD_HHMMSS.pdf` naming convention
+- **Dual Storage**:
+  - Primary: Supabase Storage (cloud, user-specific)
+  - Fallback: Local filesystem (`./output` directory)
+- **Download UI**:
+  - In-message download buttons with progress indicators
+  - Navbar dropdown showing all available PDFs
+  - One-click download with error recovery
+- **PDF Detection**: Automatic extraction of PDF filenames from AI responses
+- **File Listings**: API endpoints to browse all generated papers
+- **Secure Serving**: Authenticated downloads with proper headers
 
 ---
 
 ## 🏗 **Technical Architecture**
 
 ### **Frontend Stack**
-- **Framework**: Next.js 15 with React 19
-- **Styling**: Tailwind CSS with custom gradients
-- **Icons**: Lucide React for UI icons
-- **Authentication**: Clerk Next.js integration
-- **TypeScript**: Full type safety
+- **Framework**: Next.js 15.5.4 with React 19.1.0
+- **Styling**: Tailwind CSS 4 with custom gradients and Lucide React icons
+- **UI Components**: Radix UI primitives with shadcn/ui patterns
+- **Authentication**: Clerk Next.js SDK v6.33.0
+- **TypeScript**: Full type safety across the application
+- **Routing**: App Router with client/server components
+- **State Management**: React hooks for local state
 
 ### **Backend Stack**
-- **Runtime**: Bun (JavaScript runtime)
-- **Framework**: Express.js with TypeScript
-- **Database**: Prisma ORM with SQLite
-- **Authentication**: Clerk Express middleware
-- **CORS**: Cross-origin resource sharing enabled
+- **Runtime**: Bun v1.2.2 (fast JavaScript runtime)
+- **Framework**: Express.js 5.1.0 with TypeScript
+- **Database**: SQLite with Prisma ORM v6.16.2
+- **Authentication**: Clerk Express middleware v1.7.34
+- **CORS**: Configured for localhost:3000 origin
+- **HTTP Client**: Axios for FastAPI communication
+- **Cloud Storage**: Supabase JS Client v2.58.0
 
 ### **AI Agent Stack**
-- **Framework**: LangGraph for workflow orchestration
-- **LLM**: Google Gemini 2.5 Pro
-- **Tools**: Custom LangChain tools for research
-- **State**: Memory-based conversation checkpointing
-- **API**: FastAPI with async support
+- **Orchestration**: LangGraph for stateful workflow management
+- **LLM**: Google Gemini 2.5 Pro (primary) + Gemini 2.5 Flash (title generation)
+- **Tools**: LangChain Core custom tools:
+  - `arxiv_search` - Search academic papers
+  - `read_pdf` - Extract text from PDFs
+  - `render_latex_pdf` - Generate LaTeX PDFs
+- **State Management**:
+  - MemorySaver checkpointer for conversation persistence
+  - Unique thread IDs to prevent state conflicts
+- **API**: FastAPI with async/await support
+- **Streaming**: SSE with astream_events for real-time responses
 
-### **Development Features**
-- **Hot Reload**: Development servers with auto-reload
-- **Error Handling**: Comprehensive error catching and logging
-- **Type Safety**: Full TypeScript implementation
-- **CORS Configuration**: Proper cross-origin setup
+### **Development & DevOps**
+- **Hot Reload**: All services support auto-reload
+- **Error Handling**: Comprehensive try-catch with user-friendly messages
+- **Type Safety**: TypeScript + Python type hints
+- **Logging**: Console logging with structured debug messages
+- **Process Management**: Graceful shutdown handlers (SIGTERM, SIGINT)
+- **CORS**: Configured for development and production origins
 
 ---
 
@@ -181,15 +252,34 @@ All endpoints below require valid Clerk session with `requireAuth` middleware:
 ## 🔧 **Configuration & Environment**
 
 ### **Required Environment Variables**
-- `GOOGLE_API_KEY` - Google Gemini API access
-- `CLERK_SECRET_KEY` - Clerk authentication
-- Database connection strings
+
+**Root `.env` (Backend + AI Agent):**
+```bash
+# Google AI
+GOOGLE_API_KEY=your_google_ai_api_key
+
+# Supabase Storage
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_KEY=your_supabase_service_role_key
+
+# Clerk Authentication
+CLERK_SECRET_KEY=sk_test_your_clerk_secret_key
+
+# Express Server
+PORT=3001
+```
+
+**Frontend `.env.local`:**
+```bash
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_your_clerk_publishable_key
+```
 
 ### **External Dependencies**
-- **Tectonic**: LaTeX rendering engine
-- **ArXiv API**: Academic paper database
-- **Google AI**: Gemini model access
-- **Clerk**: Authentication service
+- **Tectonic**: LaTeX rendering engine (must be installed on system)
+- **ArXiv API**: Academic paper database (public API)
+- **Google Gemini API**: AI model access (API key required)
+- **Clerk**: Authentication service (account required)
+- **Supabase**: Cloud storage (project required, optional - falls back to local)
 
 ---
 
@@ -215,4 +305,184 @@ All endpoints below require valid Clerk session with `requireAuth` middleware:
 
 ---
 
-*This documentation reflects the current state of the research project with all implemented features and capabilities.*
+## 🎨 **UI/UX Highlights**
+
+### **Chat Interface Design**
+- **Welcome Screen**: Claude-style centered input with friendly prompt
+- **Message Bubbles**: Distinct styling for user (orange gradient) vs AI (dark gray)
+- **Markdown Rendering**:
+  - Headers (##, ###)
+  - Bold text (**text**)
+  - Numbered lists with proper indentation
+  - Bullet points with sub-bullets
+  - Clickable links
+- **Auto-features**:
+  - Auto-scroll to latest message
+  - Auto-resize textarea as user types
+  - Auto-save conversation state
+- **Visual Feedback**:
+  - Typing indicators (animated dots)
+  - Tool execution status messages
+  - Loading spinners for actions
+  - Success/error toast messages
+
+### **Sidebar Navigation**
+- Collapsible conversation list
+- Current conversation highlighted with brand color
+- Auto-generated conversation titles
+- Delete button with hover effects
+- "New Chat" button always accessible
+
+### **Brand Identity**
+- **Primary Color**: `#ff9a54` (vibrant orange)
+- **Theme**: Dark mode (gray-900 background)
+- **Accents**: Blue for links, orange for actions
+- **Typography**: Clean sans-serif with proper hierarchy
+- **Animations**: Smooth transitions (300ms duration)
+
+---
+
+## 📦 **Installation & Setup**
+
+### **Prerequisites**
+```bash
+- Node.js 20+ or Bun runtime
+- Python 3.10+
+- Tectonic LaTeX compiler
+- Git
+```
+
+### **Setup Instructions**
+
+1. **Clone Repository**
+```bash
+git clone <repository-url>
+cd research-project
+```
+
+2. **Install Dependencies**
+```bash
+# Root (Backend)
+bun install
+
+# Frontend
+cd frontend
+npm install
+
+# AI Agent
+cd agent/ai-researcher
+pip install -r requirements.txt
+```
+
+3. **Configure Environment**
+```bash
+# Create .env file in root
+cp .env.example .env
+# Add your API keys
+
+# Create .env.local in frontend
+cp frontend/.env.example frontend/.env.local
+# Add Clerk publishable key
+```
+
+4. **Setup Database**
+```bash
+npx prisma generate
+npx prisma migrate dev
+```
+
+5. **Run Services**
+```bash
+# Terminal 1: Backend
+bun run index.ts
+
+# Terminal 2: AI Agent
+cd agent/ai-researcher
+python main.py
+
+# Terminal 3: Frontend
+cd frontend
+npm run dev
+```
+
+6. **Access Application**
+- Frontend: http://localhost:3000
+- Backend: http://localhost:3001
+- AI Agent: http://localhost:8000
+
+---
+
+## 🧪 **Testing & Debugging**
+
+### **API Testing**
+- Backend health: `curl http://localhost:3001`
+- AI Agent health: `curl http://localhost:8000/health`
+- FastAPI docs: http://localhost:8000/docs
+
+### **Debug Features**
+- Comprehensive console logging in all services
+- Structured debug messages with `DEBUG:` prefix
+- Error stack traces in development mode
+- Request/response logging for API calls
+
+---
+
+## 🚀 **Deployment Considerations**
+
+### **Production Checklist**
+- [ ] Switch from SQLite to PostgreSQL
+- [ ] Configure production CORS origins
+- [ ] Set up environment variables in hosting platform
+- [ ] Configure Supabase bucket policies and RLS
+- [ ] Set up monitoring and logging (e.g., Sentry)
+- [ ] Implement rate limiting on API endpoints
+- [ ] Add request validation middleware
+- [ ] Set up CI/CD pipeline
+- [ ] Configure custom domain and SSL
+- [ ] Implement database backup strategy
+- [ ] Use Redis for LangGraph checkpointer (instead of MemorySaver)
+- [ ] Implement queue system for long-running PDF generation
+
+---
+
+## 📚 **Key Technologies & Libraries**
+
+### **Frontend**
+- next: 15.5.4
+- react: 19.1.0
+- @radix-ui/react-slot: ^1.2.3
+- lucide-react: ^0.544.0
+- tailwindcss: ^4
+
+### **Backend**
+- express: ^5.1.0
+- @prisma/client: ^6.16.2
+- @clerk/express: ^1.7.34
+- @supabase/supabase-js: ^2.58.0
+- axios: ^1.12.2
+
+### **AI Agent (Python)**
+- fastapi
+- langgraph
+- langchain-google-genai
+- langchain-core
+- supabase
+- pydantic
+
+---
+
+## 🤝 **Contributing**
+
+This is a research project showcasing modern AI agent architecture with LangGraph. Feel free to explore, modify, and extend the functionality.
+
+---
+
+## 📄 **License**
+
+See LICENSE file for details.
+
+---
+
+**Last Updated:** October 2025
+**Version:** 1.0.0
+**Project Name:** Researchy - AI Research Assistant

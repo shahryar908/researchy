@@ -771,8 +771,11 @@ process.on('SIGINT', async () => {
 
 const PORT = process.env.PORT || 3001;
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`✅ Express server running on http://localhost:${PORT}`);
     console.log(`📊 Database: Connected`);
     console.log(`🔗 FastAPI: ${FASTAPI_URL}`);
 });
+
+// Keep the process alive
+process.stdin.resume();
