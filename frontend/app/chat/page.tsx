@@ -4,7 +4,7 @@ import { Send, Sparkles, MessageSquare, Download, FileText, ChevronDown } from '
 import Sidebar from '../components/Sidebar';
 import { useUser } from '@clerk/nextjs';
 
-const API_BASE = 'http://localhost:3001';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://researchy-1.onrender.com';
 
 // Function to get user-friendly tool descriptions
 const getToolDescription = (toolName: string): string => {
