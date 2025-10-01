@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Copy backend files
 COPY backend/package.json backend/bun.lockb* ./
-RUN bun install --production
+RUN bun install
 
 # Copy backend application code
 COPY backend/ ./
