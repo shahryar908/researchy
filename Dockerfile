@@ -2,14 +2,13 @@
 FROM oven/bun:1
 WORKDIR /app
 
-# Copy backend files
-COPY backend/package.json backend/bun.lockb* ./
-RUN bun install
-
-# Copy backend application code
+# Copy backend application code first
 COPY backend/ ./
 
-# Generate Prisma client
+# Install dependencies (now prisma schema exists)
+RUN bun install
+
+# Prisma generate already ran via postinstall, but run again to be safe
 RUN bun x prisma generate
 
 # Create directory for SQLite database
