@@ -2,10 +2,17 @@
   "name": "research-project",
   "module": "index.ts",
   "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "tsx watch index.ts",
+    "build": "tsc",
+    "postinstall": "prisma generate"
+  },
   "devDependencies": {
     "@types/axios": "^0.9.36",
     "@types/bun": "latest",
-    "prisma": "^6.16.2"
+    "prisma": "^6.16.2",
+    "tsx": "^4.7.0"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
@@ -23,5 +30,8 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^5.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
