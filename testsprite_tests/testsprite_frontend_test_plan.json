@@ -1,0 +1,493 @@
+[
+  {
+    "id": "TC001",
+    "title": "User Authentication Success",
+    "description": "Verify that users can sign up and sign in securely through Clerk OAuth and manage their profiles correctly.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to signup page."
+      },
+      {
+        "type": "action",
+        "description": "Register a new user using valid OAuth credentials."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm successful account creation and redirection to personalized dashboard."
+      },
+      {
+        "type": "action",
+        "description": "Sign out and navigate to login page."
+      },
+      {
+        "type": "action",
+        "description": "Sign in with previously registered OAuth credentials."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify successful login and session persistence across browser reloads."
+      },
+      {
+        "type": "action",
+        "description": "Access profile management page."
+      },
+      {
+        "type": "action",
+        "description": "Update profile information and save changes."
+      },
+      {
+        "type": "assertion",
+        "description": "Ensure updated profile data is correctly saved and displayed."
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "User Authentication Error Handling",
+    "description": "Validate proper error messages and restrictions during authentication failures and invalid profile operations.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to login page."
+      },
+      {
+        "type": "action",
+        "description": "Enter incorrect OAuth credentials and attempt to login."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm display of appropriate error message and no session created."
+      },
+      {
+        "type": "action",
+        "description": "Attempt to register with an already used email."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify registration is prevented and a descriptive error is shown."
+      },
+      {
+        "type": "action",
+        "description": "Edit profile with invalid data (e.g., invalid email format) and save."
+      },
+      {
+        "type": "assertion",
+        "description": "Ensure validation errors are displayed and data is not saved."
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Streaming Chat Interface Basic Flow",
+    "description": "Ensure the streaming chat interface returns AI-generated token-by-token real-time responses to user queries.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Sign in and navigate to the chat interface."
+      },
+      {
+        "type": "action",
+        "description": "Enter a valid research query into the chat input."
+      },
+      {
+        "type": "assertion",
+        "description": "Observe the AI response streaming token-by-token without significant delays."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the final response content is coherent, relevant, and complete."
+      },
+      {
+        "type": "action",
+        "description": "Send multiple sequential queries."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the chat correctly manages multiple turns with smooth streaming each time."
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Streaming Chat Interface Interrupt and Recovery",
+    "description": "Verify handling of stream interruptions and recovery to avoid response loss or corruption.",
+    "category": "error handling",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Start a chat query and simulate network interruption mid-response stream."
+      },
+      {
+        "type": "assertion",
+        "description": "Check that partial response is preserved, and an informative error message is displayed."
+      },
+      {
+        "type": "action",
+        "description": "Retry sending the same query after network recovery."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm that streaming resumes smoothly and produces the complete response."
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Conversation Management: Creation, Switching, and Deletion",
+    "description": "Validate the ability to create new conversations, switch between existing ones, assign AI-generated titles, and delete conversations.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Initiate new conversation and enter several messages."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify AI generates a relevant conversation title automatically."
+      },
+      {
+        "type": "action",
+        "description": "Create multiple conversations."
+      },
+      {
+        "type": "action",
+        "description": "Switch between conversations."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm the chat interface updates to display messages for the selected conversation."
+      },
+      {
+        "type": "action",
+        "description": "Delete a conversation."
+      },
+      {
+        "type": "assertion",
+        "description": "Ensure the conversation is removed from the list and cannot be accessed subsequently."
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "ArXiv Paper Search with Filters and Sorting",
+    "description": "Test the ArXiv integration to perform academic paper searches with correct metadata extraction, category filtering, and result sorting.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the research paper search interface."
+      },
+      {
+        "type": "action",
+        "description": "Enter a search query and apply category filters (e.g., Computer Science, Physics)."
+      },
+      {
+        "type": "action",
+        "description": "Submit search request."
+      },
+      {
+        "type": "assertion",
+        "description": "Validate returned papers include correct metadata: title, authors, summary, published date."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm results are filtered according to selected categories."
+      },
+      {
+        "type": "action",
+        "description": "Sort results by relevance and then by submission date."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that the sorting order is correctly applied for each method."
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "ArXiv Search Error Handling and Rate Limits",
+    "description": "Ensure graceful handling of API errors, invalid queries, and rate limiting scenarios from the ArXiv integration.",
+    "category": "error handling",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Submit an empty or malformed search query."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that a user-friendly error message is shown."
+      },
+      {
+        "type": "action",
+        "description": "Simulate ArXiv API rate limiting or unavailability."
+      },
+      {
+        "type": "assertion",
+        "description": "Check that informative error notifications are displayed without application crashes."
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "PDF Upload and Multi-page Text Extraction",
+    "description": "Verify users can upload multi-page PDF research documents and that the system extracts text correctly across all pages.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Upload a multi-page PDF research document via the platform."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm the file is successfully uploaded and stored securely."
+      },
+      {
+        "type": "action",
+        "description": "Trigger PDF text extraction process."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that text is correctly extracted from all pages, including footnotes and captions."
+      },
+      {
+        "type": "assertion",
+        "description": "Check that the extracted text is accessible for searching and analysis in the platform."
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "PDF Retrieval and Extraction from Web URLs",
+    "description": "Test handling of PDF documents loaded directly from web URLs with proper download, extraction, and error handling.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Provide a valid web URL pointing to a publicly accessible PDF document."
+      },
+      {
+        "type": "action",
+        "description": "Trigger the PDF fetch and extraction process."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify successful download and extraction of text content from the PDF."
+      },
+      {
+        "type": "action",
+        "description": "Provide an invalid or inaccessible URL."
+      },
+      {
+        "type": "assertion",
+        "description": "Ensure the system shows an appropriate error message without crashing."
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "LaTeX Document Generation with Math and Bibliography",
+    "description": "Validate the generation of research papers using LaTeX templates including correct rendering of mathematical notation, bibliography, and timestamped PDF output files.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Input research content that includes mathematical formulas and citations."
+      },
+      {
+        "type": "action",
+        "description": "Trigger the LaTeX document generation process."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the system creates a PDF file with accurate rendering of math notation and bibliography."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm the generated PDF file includes a timestamp in the filename for versioning."
+      },
+      {
+        "type": "action",
+        "description": "Open the generated PDF and check format, layout, and completeness."
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "File Upload and Download with Permission Checks",
+    "description": "Ensure secure file upload and authenticated download functionality for stored PDFs with permission enforcement.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Upload a PDF file while authenticated."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify successful file storage in Supabase and local fallback."
+      },
+      {
+        "type": "action",
+        "description": "Attempt to download the file with authenticated session."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm download succeeds with correct file integrity."
+      },
+      {
+        "type": "action",
+        "description": "Attempt to download the file without authentication or with unauthorized user."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify download is blocked with appropriate error message."
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Backend API Endpoint Security and Functional Verification",
+    "description": "Test all protected and public backend API endpoints for correct authentication flow, error handling, and expected functional responses.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send API requests to protected endpoints without authentication."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the API returns 401 Unauthorized errors."
+      },
+      {
+        "type": "action",
+        "description": "Send authenticated requests to all protected endpoints with valid tokens."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm API returns expected data or success messages."
+      },
+      {
+        "type": "action",
+        "description": "Send malformed or invalid data requests."
+      },
+      {
+        "type": "assertion",
+        "description": "Check API returns appropriate 4xx error codes with descriptive messages."
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Conversation History Persistence Across Sessions",
+    "description": "Assess whether conversation history and state persist correctly across user sessions and server restarts.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Create and exchange messages in a research conversation."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify conversation and messages are saved in the database."
+      },
+      {
+        "type": "action",
+        "description": "Sign out and sign in again with the same user account."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm previous conversations and messages load correctly."
+      },
+      {
+        "type": "action",
+        "description": "Simulate server restart."
+      },
+      {
+        "type": "assertion",
+        "description": "Ensure conversation data remains intact and available after restart."
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Performance Testing of Streaming Latency and Database Queries",
+    "description": "Benchmark streaming chat response latency, database query times, and caching efficiency under typical and high load conditions.",
+    "category": "performance",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Measure time from user query submission to first token received in streaming chat."
+      },
+      {
+        "type": "assertion",
+        "description": "Validate latency is within acceptable performance thresholds."
+      },
+      {
+        "type": "action",
+        "description": "Execute common database queries such as conversation retrieval and check response time."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm database queries respond efficiently and within expected limits."
+      },
+      {
+        "type": "action",
+        "description": "Test conversation caching by repeatedly accessing the same session data."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify cache hits improve response times and perform smart truncation without data loss."
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "UI Component Behavior and Accessibility",
+    "description": "Verify core UI components such as buttons, sidebar navigation, and chat interface are functional, usable, and accessible.",
+    "category": "ui",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Interact with UI buttons in various contexts and confirm expected actions trigger."
+      },
+      {
+        "type": "assertion",
+        "description": "Check buttons display loading states and disable during processing."
+      },
+      {
+        "type": "action",
+        "description": "Navigate through the sidebar menu to different sections of the platform."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm correct page loads and navigation elements highlight active sections."
+      },
+      {
+        "type": "action",
+        "description": "Perform keyboard navigation and access UI components for accessibility."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify all interactive elements are reachable and usable via keyboard and screen readers."
+      }
+    ]
+  }
+]

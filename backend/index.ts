@@ -26,7 +26,9 @@ if (supabaseUrl && supabaseServiceKey) {
 
 app.use(cors({
     origin: 'http://localhost:3000',
-    credentials: true
+    credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
@@ -338,6 +340,7 @@ app.post("/api/research/chat", requireAuth, async (req: Request, res: Response) 
 
 // Stream chat responses
 app.post("/api/research/chat/stream", requireAuth, async (req: Request, res: Response) => {
+
     try {
         const { userId } = req as AuthRequest;
         const { message, conversationId } = req.body;

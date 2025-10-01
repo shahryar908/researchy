@@ -1,0 +1,88 @@
+{
+  "tech_stack": [
+    "Python",
+    "Next.js",
+    "React",
+    "TypeScript",
+    "TailwindCSS",
+    "Supabase",
+    "Prisma",
+    "npm"
+  ],
+  "features": [
+    {
+      "name": "AI Researcher Agent Core",
+      "description": "The main entry point and orchestration for the AI research agent.",
+      "files": [
+        "agent/ai-researcher/main.py",
+        "agent/ai-researcher/frontend.py"
+      ]
+    },
+    {
+      "name": "ArXiv Tool Integration",
+      "description": "Handles searching and interacting with the arXiv API for research papers.",
+      "files": [
+        "agent/ai-researcher/arxiv_tool.py"
+      ]
+    },
+    {
+      "name": "PDF Generation and Reading",
+      "description": "Manages the creation and parsing of PDF documents.",
+      "files": [
+        "agent/ai-researcher/write_pdf.py",
+        "agent/ai-researcher/read_pdf.py"
+      ]
+    },
+    {
+      "name": "Supabase Storage Integration",
+      "description": "Handles file storage and retrieval using Supabase.",
+      "files": [
+        "agent/ai-researcher/supabase_storage.py",
+        "setup-supabase-storage.sql"
+      ]
+    },
+    {
+      "name": "Chat Interface",
+      "description": "Frontend component for user interaction via a chat interface.",
+      "files": [
+        "frontend/app/chat/page.tsx"
+      ]
+    },
+    {
+      "name": "Sidebar Navigation",
+      "description": "Frontend component for application navigation.",
+      "files": [
+        "frontend/app/components/Sidebar.tsx"
+      ]
+    },
+    {
+      "name": "Checking Component",
+      "description": "A frontend component with an unspecified 'checking' functionality, likely for displaying status or validation.",
+      "files": [
+        "frontend/app/components/checking.tsx"
+      ]
+    },
+    {
+      "name": "Main Application Page",
+      "description": "The primary landing page for the frontend application.",
+      "files": [
+        "frontend/app/page.tsx"
+      ]
+    },
+    {
+      "name": "UI Button Component",
+      "description": "Reusable UI component for buttons.",
+      "files": [
+        "frontend/components/ui/button.tsx"
+      ]
+    },
+    {
+      "name": "Database Schema and Migrations",
+      "description": "Defines the database structure and manages schema changes using Prisma.",
+      "files": [
+        "prisma/schema.prisma",
+        "prisma/migrations/"
+      ]
+    }
+  ]
+}
