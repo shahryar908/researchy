@@ -1,8 +1,6 @@
 'use client';
 import React, { useState } from "react";
 import Link from "next/link";
-import { ClerkProvider } from "@clerk/nextjs";
-import Image from "next/image";
 import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { MessageSquare, Menu, X, ChevronDown, FileText, Download } from "lucide-react";
 export default function Home() {
@@ -375,11 +373,11 @@ export default function Home() {
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-4">Ask Your Question</h3>
                 <p className="text-gray-300 mb-6 leading-relaxed">
-                  Simply type your research question in natural language. "Find papers about quantum computing applications" or "Generate a literature review on machine learning."
+                  Simply type your research question in natural language. &quot;Find papers about quantum computing applications&quot; or &quot;Generate a literature review on machine learning.&quot;
                 </p>
                 <div className="bg-gray-900/50 border border-gray-600/30 rounded-xl p-4">
                   <div className="text-sm text-gray-400 mb-2">Example:</div>
-                  <div className="text-white italic">"Find recent papers on transformer attention mechanisms"</div>
+                  <div className="text-white italic">&quot;Find recent papers on transformer attention mechanisms&quot;</div>
                 </div>
               </div>
             </div>
