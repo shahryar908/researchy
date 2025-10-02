@@ -3,22 +3,24 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Send, Sparkles, MessageSquare, Download, FileText, ChevronDown } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import { useUser } from '@clerk/nextjs';
+import Link from 'next/link';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://researchy-1.onrender.com';
+// Force localhost for development
+const API_BASE = 'http://localhost:3001';
 
 // Function to get user-friendly tool descriptions
 const getToolDescription = (toolName: string): string => {
   const toolDescriptions: { [key: string]: string } = {
-    'arxiv_search': '🔍 Searching arXiv for research papers...',
-    'read_pdf': '📄 Reading and extracting text from research paper...',
-    'render_latex_pdf': '📝 Writing and generating research paper PDF...',
-    'search_papers': '🔍 Searching for research papers...',
-    'web_search': '🌐 Searching the web...',
-    'analyze': '🔬 Analyzing content...',
-    'unknown': '⚙️ Processing request...'
+    'arxiv_search': '[SEARCH] Searching arXiv for research papers...',
+    'read_pdf': '[READ] Reading and extracting text from research paper...',
+    'render_latex_pdf': '[WRITE] Writing and generating research paper PDF...',
+    'search_papers': '[SEARCH] Searching for research papers...',
+    'web_search': '[WEB] Searching the web...',
+    'analyze': '[ANALYZE] Analyzing content...',
+    'unknown': '[PROCESS] Processing request...'
   };
 
-  return toolDescriptions[toolName] || `⚙️ Using ${toolName}...`;
+  return toolDescriptions[toolName] || `[TOOL] Using ${toolName}...`;
 };
 
 // Function to extract PDF filenames from AI responses
@@ -303,10 +305,17 @@ const FormattedMessage = ({ content }: { content: string }) => {
                     }}
                     disabled={isDownloading}
                     className={`flex items-center gap-2 px-3 py-2 text-white text-sm rounded-lg transition-colors ${
-                      isDownloading 
-                        ? 'bg-gray-600 cursor-not-allowed' 
-                        : 'bg-blue-600 hover:bg-blue-700'
+                      isDownloading
+                        ? 'bg-gray-600 cursor-not-allowed'
+                        : ''
                     }`}
+                    style={isDownloading ? {} : { backgroundColor: '#ff9a54' }}
+                    onMouseEnter={(e) => {
+                      if (!isDownloading) e.currentTarget.style.backgroundColor = '#e8844a';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isDownloading) e.currentTarget.style.backgroundColor = '#ff9a54';
+                    }}
                   >
                     {isDownloading ? (
                       <>
@@ -653,8 +662,17 @@ export default function ChatPage() {
             )}
             {sidebarOpen && <div></div>}
             
-            {/* PDF Download Section */}
-            <div className="flex items-center">
+            {/* PDF Download Section & Library Link */}
+            <div className="flex items-center gap-3">
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-2 px-3 py-1.5 text-white text-xs rounded-md transition-colors bg-gray-700 hover:bg-gray-600"
+                title="View all your research papers"
+              >
+                <FileText className="w-3 h-3" />
+                <span>Library</span>
+              </Link>
+
               {availablePDFs.length > 0 ? (
                 <div className="relative" ref={pdfDropdownRef}>
                   <button

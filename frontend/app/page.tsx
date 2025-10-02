@@ -426,7 +426,7 @@ export default function Home() {
                   Receive comprehensive answers, curated paper lists, or publication-ready LaTeX documents. Everything formatted professionally and ready to use.
                 </p>
                 <div className="bg-gradient-to-r from-emerald-500/10 to-emerald-600/10 border border-emerald-500/20 rounded-xl p-4">
-                  <div className="text-emerald-400 text-sm font-medium mb-1">✓ Research Complete</div>
+                  <div className="text-emerald-400 text-sm font-medium mb-1">[OK] Research Complete</div>
                   <div className="text-gray-300 text-sm">Found 12 relevant papers, generated summary</div>
                 </div>
               </div>
@@ -497,25 +497,25 @@ export default function Home() {
                 <div className="space-y-4 mb-8">
                   <div className="flex items-center gap-3">
                     <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
+                      <span className="text-white text-xs">✔</span>
                     </div>
                     <span className="text-gray-300">5 research queries per day</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
+                      <span className="text-white text-xs">✔</span>
                     </div>
                     <span className="text-gray-300">ArXiv paper search</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
+                      <span className="text-white text-xs">✔</span>
                     </div>
                     <span className="text-gray-300">Basic summaries</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
+                      <span className="text-white text-xs">✔</span>
                     </div>
                     <span className="text-gray-300">Community support</span>
                   </div>
@@ -551,31 +551,31 @@ export default function Home() {
                 <div className="space-y-4 mb-8">
                   <div className="flex items-center gap-3">
                     <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
+                      <span className="text-white text-xs">✔</span>
                     </div>
                     <span className="text-gray-300">Unlimited research queries</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
+                      <span className="text-white text-xs">✔</span>
                     </div>
                     <span className="text-gray-300">Advanced ArXiv analysis</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
+                      <span className="text-white text-xs">✔</span>
                     </div>
                     <span className="text-gray-300">LaTeX document generation</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
+                      <span className="text-white text-xs">✔</span>
                     </div>
                     <span className="text-gray-300">Priority support</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
+                      <span className="text-white text-xs">✔</span>
                     </div>
                     <span className="text-gray-300">Export to multiple formats</span>
                   </div>
@@ -613,31 +613,31 @@ export default function Home() {
                 <div className="space-y-4 mb-8">
                   <div className="flex items-center gap-3">
                     <div className="w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
+                      <span className="text-white text-xs">✔</span>
                     </div>
                     <span className="text-gray-300">Everything in Professional</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
+                      <span className="text-white text-xs">✔</span>
                     </div>
                     <span className="text-gray-300">Team collaboration tools</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
+                      <span className="text-white text-xs">✔</span>
                     </div>
                     <span className="text-gray-300">Custom integrations</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
+                      <span className="text-white text-xs">✔</span>
                     </div>
                     <span className="text-gray-300">Dedicated support</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
+                      <span className="text-white text-xs">✔</span>
                     </div>
                     <span className="text-gray-300">On-premise deployment</span>
                   </div>
