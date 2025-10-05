@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, Sparkles, MessageSquare, Download, FileText, ChevronDown } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
-import { useUser } from '@clerk/nextjs';
+// CLERK AUTH COMMENTED OUT - Uncomment when ready to use authentication
+// import { useUser } from '@clerk/nextjs';
 import Link from 'next/link';
 
 // Force localhost for development
@@ -355,7 +356,9 @@ interface Message {
 }
 
 export default function ChatPage() {
-  const { user } = useUser();
+  // CLERK AUTH COMMENTED OUT - Uncomment when ready to use authentication
+  // const { user } = useUser();
+  const user = { id: 'test_user_123', firstName: 'User' }; // Mock user for testing
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);

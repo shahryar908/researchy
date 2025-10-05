@@ -1,7 +1,8 @@
 'use client';
 import React, { useState } from 'react';
 import { Plus, MessageSquare, Edit3, Trash2, ChevronLeft, ChevronRight, User, LogOut, Settings, ChevronUp } from 'lucide-react';
-import { useUser, useClerk } from '@clerk/nextjs';
+// CLERK AUTH COMMENTED OUT - Uncomment when ready to use authentication
+// import { useUser, useClerk } from '@clerk/nextjs';
 
 interface Conversation {
   id: string;
@@ -30,8 +31,15 @@ export default function Sidebar({
   onNewChat,
   onDeleteConversation
 }: SidebarProps) {
-  const { user, isLoaded } = useUser();
-  const { signOut, openUserProfile } = useClerk();
+  // CLERK AUTH COMMENTED OUT - Uncomment when ready to use authentication
+  // const { user, isLoaded } = useUser();
+  // const { signOut, openUserProfile } = useClerk();
+
+  // Mock user and functions for testing
+  const user = { id: 'test_user_123', firstName: 'User', imageUrl: '' };
+  const isLoaded = true;
+  const signOut = () => console.log('Sign out disabled - auth is off');
+  const openUserProfile = () => console.log('Profile disabled - auth is off');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
