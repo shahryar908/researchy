@@ -1,0 +1,25 @@
+{
+  "name": "researchy",
+  "version": "1.0.0",
+  "description": "AI Research Assistant with Ngrok deployment support",
+  "scripts": {
+    "ngrok": "ngrok.cmd start --all --config ngrok.yml",
+    "urls": "node get-ngrok-urls.js",
+    "backend": "cd backend && bun run dev",
+    "agent": "cd agent/ai-researcher && uv run main.py",
+    "deploy": "start-ngrok.bat"
+  },
+  "keywords": [
+    "ai",
+    "research",
+    "langgraph",
+    "fastapi",
+    "nextjs",
+    "ngrok"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "axios": "^1.12.2"
+  }
+}

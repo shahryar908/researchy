@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+// CLERK AUTH COMMENTED OUT - Uncomment when ready to use authentication
+/*
 import {
   ClerkProvider,
   SignInButton,
@@ -7,6 +9,7 @@ import {
   SignedOut,
   UserButton,
 } from '@clerk/nextjs'
+*/
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -31,7 +34,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
+    // CLERK PROVIDER COMMENTED OUT - Uncomment when ready to use authentication
+    // <ClerkProvider>
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
@@ -39,6 +43,6 @@ export default function RootLayout({
         {children}
       </body>
     </html>
-    </ClerkProvider>
+    // </ClerkProvider>
   );
 }

@@ -31,7 +31,10 @@ app.add_middleware(
         "http://localhost:3001",
         "http://localhost:3000",
         "https://researchy-1.onrender.com",  # Production backend
-        "https://*.onrender.com"  # All Render deployments
+        "https://*.onrender.com",  # All Render deployments
+        "https://*.vercel.app",  # Vercel deployments
+        "https://*.ngrok.io",  # Ngrok tunnels
+        "https://*.ngrok-free.app"  # Ngrok free tier
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -340,10 +343,13 @@ def load_conversation_history(conversation_id: str) -> List[Dict[str, Any]]:
                 return cached_data
 
         print(f"[DB] Loading fresh conversation history for: {conversation_id}")
-        
+
+        # Get backend URL from environment (support for ngrok deployment)
+        backend_url = os.getenv("BACKEND_URL", "http://localhost:3001")
+
         # Call internal endpoint that doesn't require authentication
         response = requests.get(
-            f"http://localhost:3001/internal/conversation/{conversation_id}/history",
+            f"{backend_url}/internal/conversation/{conversation_id}/history",
             timeout=5,  # Reduced timeout for faster failure
             headers={
                 "X-Internal-Request": "true"  # Mark as internal request

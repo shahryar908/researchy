@@ -2,7 +2,8 @@
 import express, { type Request, type Response, type NextFunction } from 'express';
 import cors from 'cors';
 import 'dotenv/config';
-import { clerkMiddleware, getAuth, clerkClient } from '@clerk/express';
+// CLERK AUTH COMMENTED OUT - Uncomment when ready to use authentication
+// import { clerkMiddleware, getAuth, clerkClient } from '@clerk/express';
 import { PrismaClient, Prisma } from './generated/prisma';
 import axios, { AxiosResponse } from 'axios';
 import { createClient } from '@supabase/supabase-js';
@@ -30,7 +31,9 @@ app.use(cors({
         'https://research-agent-git-main1-shahryar908s-projects.vercel.app',
         /\.vercel\.app$/,  // Allow all Vercel preview deployments
         /\.ngrok\.io$/,    // Allow ngrok tunnels
-        /\.ngrok-free\.app$/  // Allow ngrok free tier
+        /\.ngrok-free\.app$/,  // Allow ngrok free tier
+        /^https?:\/\/[a-z0-9-]+\.ngrok-free\.app$/,  // Explicit ngrok pattern
+        /^https?:\/\/[a-z0-9-]+\.ngrok\.io$/  // Explicit ngrok.io pattern
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -38,7 +41,8 @@ app.use(cors({
 }));
 
 app.use(express.json());
-app.use(clerkMiddleware());
+// CLERK MIDDLEWARE COMMENTED OUT - Uncomment when ready to use authentication
+// app.use(clerkMiddleware());
 
 // ==================== TYPES ====================
 
@@ -81,15 +85,18 @@ interface ConversationWithMessages {
 
 // ==================== MIDDLEWARE ====================
 
+// AUTHENTICATION DISABLED - Using mock user for testing
+// Uncomment the code below and comment out the mock version when ready to enable auth
+/*
 const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
     const auth = getAuth(req);
-    
+
     if (!auth.userId) {
         return res.status(401).json({ error: "Unauthorized" });
     }
-    
+
     (req as AuthRequest).userId = auth.userId;
-    
+
     // Ensure user exists in database
     try {
         await prisma.user.upsert({
@@ -102,7 +109,29 @@ const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
     } catch (error) {
         console.error('Error upserting user:', error);
     }
-    
+
+    next();
+};
+*/
+
+// MOCK AUTH MIDDLEWARE - For testing without authentication
+const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
+    // Use a mock user ID for testing
+    (req as AuthRequest).userId = 'test_user_123';
+
+    // Ensure mock user exists in database
+    try {
+        await prisma.user.upsert({
+            where: { clerkUserId: 'test_user_123' },
+            update: { updatedAt: new Date() },
+            create: {
+                clerkUserId: 'test_user_123',
+            }
+        });
+    } catch (error) {
+        console.error('Error upserting mock user:', error);
+    }
+
     next();
 };
 
@@ -301,10 +330,14 @@ app.post("/api/research/chat", requireAuth, async (req: Request, res: Response) 
         // Save user message to database
         await saveMessage(conversation.id, user.id, "user", message);
 
-        // Get user's name from Clerk (from the request auth context)
+        // Get user's name - CLERK AUTH DISABLED, using default name
+        // Uncomment below when Clerk is enabled
+        /*
         const auth = getAuth(req);
         const clerkUser = auth.sessionClaims;
         const userName = (clerkUser?.firstName as string) || (clerkUser?.email_addresses?.[0]?.email_address as string)?.split('@')[0] || "User";
+        */
+        const userName = "User"; // Default user name for testing
         console.log(`DEBUG: User name for PDF: ${userName}`);
 
         // Call FastAPI with conversation context
@@ -379,10 +412,14 @@ app.post("/api/research/chat/stream", requireAuth, async (req: Request, res: Res
         // Send initial connection event
         res.write(': Connected to chat stream\n\n');
 
-        // Get user's name from Clerk (from the request auth context)
+        // Get user's name - CLERK AUTH DISABLED, using default name
+        // Uncomment below when Clerk is enabled
+        /*
         const auth = getAuth(req);
         const clerkUser = auth.sessionClaims;
         const userName = (clerkUser?.firstName as string) || (clerkUser?.email_addresses?.[0]?.email_address as string)?.split('@')[0] || "User";
+        */
+        const userName = "User"; // Default user name for testing
         console.log(`DEBUG: User name for PDF (streaming): ${userName}`);
 
         // Call FastAPI streaming endpoint
