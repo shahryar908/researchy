@@ -19,16 +19,18 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 let supabase: any = null;
 if (supabaseUrl && supabaseServiceKey) {
     supabase = createClient(supabaseUrl, supabaseServiceKey);
-    console.log('✅ Supabase client initialized');
+    console.log('[SUCCESS] Supabase client initialized');
 } else {
-    console.log('⚠️  Supabase not configured - PDFs will be served locally');
+    console.log('[WARNING] Supabase not configured - PDFs will be served locally');
 }
 
 app.use(cors({
     origin: [
         'http://localhost:3000',
         'https://research-agent-git-main1-shahryar908s-projects.vercel.app',
-        /\.vercel\.app$/  // Allow all Vercel preview deployments
+        /\.vercel\.app$/,  // Allow all Vercel preview deployments
+        /\.ngrok\.io$/,    // Allow ngrok tunnels
+        /\.ngrok-free\.app$/  // Allow ngrok free tier
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -194,7 +196,7 @@ async function generateConversationTitle(conversation: any, firstMessage: string
                     data: { title: newTitle }
                 });
 
-                console.log(`✅ Generated title: "${newTitle}" for conversation ${conversation.id}`);
+                console.log(`[OK] Generated title: "${newTitle}" for conversation ${conversation.id}`);
             } catch (apiError: any) {
                 console.error('DEBUG: FastAPI title generation failed:', apiError.message);
                 throw apiError; // This will trigger the fallback
@@ -299,13 +301,20 @@ app.post("/api/research/chat", requireAuth, async (req: Request, res: Response) 
         // Save user message to database
         await saveMessage(conversation.id, user.id, "user", message);
 
+        // Get user's name from Clerk (from the request auth context)
+        const auth = getAuth(req);
+        const clerkUser = auth.sessionClaims;
+        const userName = (clerkUser?.firstName as string) || (clerkUser?.email_addresses?.[0]?.email_address as string)?.split('@')[0] || "User";
+        console.log(`DEBUG: User name for PDF: ${userName}`);
+
         // Call FastAPI with conversation context
         const response: AxiosResponse<FastAPIChatResponse> = await axios.post(
             `${FASTAPI_URL}/api/chat`,
             {
                 user_id: userId,
                 conversation_id: conversation.id,
-                message: message
+                message: message,
+                user_name: userName
             }
         );
 
@@ -370,13 +379,20 @@ app.post("/api/research/chat/stream", requireAuth, async (req: Request, res: Res
         // Send initial connection event
         res.write(': Connected to chat stream\n\n');
 
+        // Get user's name from Clerk (from the request auth context)
+        const auth = getAuth(req);
+        const clerkUser = auth.sessionClaims;
+        const userName = (clerkUser?.firstName as string) || (clerkUser?.email_addresses?.[0]?.email_address as string)?.split('@')[0] || "User";
+        console.log(`DEBUG: User name for PDF (streaming): ${userName}`);
+
         // Call FastAPI streaming endpoint
         const response = await axios.post(
             `${FASTAPI_URL}/api/chat/stream`,
-            { 
-                user_id: userId, 
-                conversation_id: conversationId || conversation.id, 
-                message 
+            {
+                user_id: userId,
+                conversation_id: conversationId || conversation.id,
+                message,
+                user_name: userName
             },
             { responseType: 'stream' }
         );
@@ -617,6 +633,33 @@ app.delete("/api/research/conversations/:conversationId", requireAuth, async (re
     }
 });
 
+// GET /api/research/papers/library - Get user's paper library (MUST be before :filename route)
+app.get("/api/research/papers/library", requireAuth, async (req: Request, res: Response) => {
+    try {
+        const { userId } = req as AuthRequest;
+
+        const user = await prisma.user.findUnique({
+            where: { clerkUserId: userId }
+        });
+
+        if (!user) {
+            return res.json({ papers: [] });
+        }
+
+        const papers = await prisma.paper.findMany({
+            where: { userId: user.id },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        console.log(`[OK] Retrieved ${papers.length} papers for user ${userId}`);
+        res.json({ papers });
+
+    } catch (error: any) {
+        console.error('Error fetching paper library:', error);
+        res.status(500).json({ error: "Failed to fetch paper library" });
+    }
+});
+
 // Download generated paper
 app.get("/api/research/papers/:filename", requireAuth, async (req: Request, res: Response) => {
     try {
@@ -626,31 +669,34 @@ app.get("/api/research/papers/:filename", requireAuth, async (req: Request, res:
         // Try Supabase first if configured
         if (supabase) {
             try {
-                console.log(`Attempting to download from Supabase: ${userId}/${filename}`);
-                
+                console.log(`[SUPABASE] Attempting download: ${userId}/${filename}`);
+
                 const { data: fileData, error } = await supabase.storage
                     .from('researchy')
                     .download(`${userId}/${filename}`);
 
                 if (error) {
-                    console.log(`Supabase download error: ${error.message}`);
-                    throw error;
-                }
+                    console.log(`[SUPABASE] Download error:`, {
+                        message: error.message,
+                        statusCode: error.statusCode,
+                        error: error.error,
+                        name: error.name
+                    });
+                    // File not found in Supabase, fall through to local
+                } else if (fileData) {
+                    console.log(`[SUPABASE] ✓ Successfully downloaded: ${filename}`);
 
-                if (fileData) {
-                    console.log(`✅ Successfully downloaded from Supabase: ${filename}`);
-                    
                     // Convert blob to buffer
                     const buffer = Buffer.from(await fileData.arrayBuffer());
-                    
+
                     res.setHeader('Content-Type', 'application/pdf');
                     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
                     res.setHeader('Content-Length', buffer.length.toString());
-                    
+
                     return res.send(buffer);
                 }
             } catch (supabaseError: any) {
-                console.log(`Supabase download failed, falling back to FastAPI: ${supabaseError.message}`);
+                console.log(`[SUPABASE] Exception:`, supabaseError.message || supabaseError);
             }
         }
 
@@ -658,7 +704,10 @@ app.get("/api/research/papers/:filename", requireAuth, async (req: Request, res:
         console.log(`Downloading from FastAPI: ${filename}`);
         const response = await axios.get(
             `${FASTAPI_URL}/api/papers/download/${filename}`,
-            { responseType: 'stream' }
+            {
+                responseType: 'stream',
+                params: { user_id: userId }
+            }
         );
 
         res.setHeader('Content-Type', 'application/pdf');
@@ -760,6 +809,111 @@ app.get("/api/research/papers", requireAuth, async (req: Request, res: Response)
     }
 });
 
+// POST /api/research/papers/metadata - Save paper metadata (internal endpoint from FastAPI)
+app.post("/api/research/papers/metadata", async (req: Request, res: Response) => {
+    try {
+        // Verify internal request
+        const internalHeader = req.headers['x-internal-request'];
+        if (internalHeader !== 'true') {
+            return res.status(403).json({ error: "Forbidden: Internal endpoint only" });
+        }
+
+        const { user_id, filename, title, supabase_path, file_size } = req.body;
+
+        if (!user_id || !filename || !title) {
+            return res.status(400).json({ error: "Missing required fields: user_id, filename, title" });
+        }
+
+        // Find user by Clerk ID
+        const user = await prisma.user.findUnique({
+            where: { clerkUserId: user_id }
+        });
+
+        if (!user) {
+            // Create user if doesn't exist
+            const newUser = await prisma.user.create({
+                data: {
+                    clerkUserId: user_id
+                }
+            });
+
+            // Create paper record
+            const paper = await prisma.paper.create({
+                data: {
+                    userId: newUser.id,
+                    filename,
+                    title,
+                    supabasePath: supabase_path || null,
+                    fileSize: file_size || null
+                }
+            });
+
+            console.log(`[OK] Created paper metadata for new user ${user_id}: ${title}`);
+            return res.json({ success: true, paper });
+        }
+
+        // Create paper record for existing user
+        const paper = await prisma.paper.create({
+            data: {
+                userId: user.id,
+                filename,
+                title,
+                supabasePath: supabase_path || null,
+                fileSize: file_size || null
+            }
+        });
+
+        console.log(`[OK] Created paper metadata for user ${user_id}: ${title}`);
+        res.json({ success: true, paper });
+
+    } catch (error: any) {
+        console.error('Error saving paper metadata:', error);
+        res.status(500).json({ error: "Failed to save paper metadata" });
+    }
+});
+
+// DELETE /api/research/papers/:id - Delete paper from library
+app.delete("/api/research/papers/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+        const { userId } = req as AuthRequest;
+        const { id } = req.params;
+
+        const user = await prisma.user.findUnique({
+            where: { clerkUserId: userId }
+        });
+
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Verify paper belongs to user before deleting
+        const paper = await prisma.paper.findFirst({
+            where: {
+                id,
+                userId: user.id
+            }
+        });
+
+        if (!paper) {
+            return res.status(404).json({ error: "Paper not found or unauthorized" });
+        }
+
+        // Delete from database
+        await prisma.paper.delete({
+            where: { id }
+        });
+
+        // TODO: Also delete from Supabase storage if needed
+
+        console.log(`[OK] Deleted paper ${id} for user ${userId}`);
+        res.json({ success: true });
+
+    } catch (error: any) {
+        console.error('Error deleting paper:', error);
+        res.status(500).json({ error: "Failed to delete paper" });
+    }
+});
+
 // ==================== GRACEFUL SHUTDOWN ====================
 
 process.on('SIGTERM', async () => {
@@ -779,9 +933,9 @@ process.on('SIGINT', async () => {
 const PORT = process.env.PORT || 3001;
 
 const server = app.listen(PORT, () => {
-    console.log(`✅ Express server running on http://localhost:${PORT}`);
-    console.log(`📊 Database: Connected`);
-    console.log(`🔗 FastAPI: ${FASTAPI_URL}`);
+    console.log(`[OK] Express server running on http://localhost:${PORT}`);
+    console.log(`[DB] Database: Connected`);
+    console.log(`[API] FastAPI: ${FASTAPI_URL}`);
 });
 
 // Keep the process alive

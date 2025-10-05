@@ -23,10 +23,11 @@ model User {
   lastName      String?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
-  
+
   conversations Conversation[]
   messages      Message[]
-  
+  papers        Paper[]
+
   @@map("users")
 }
 
@@ -50,15 +51,30 @@ model Message {
   conversationId String
   userId         String
   role           String        // "user" or "assistant" or "system"
-  content        String        
+  content        String
   toolCalls      Json?
   metadata       Json?
   timestamp      DateTime      @default(now())
-  
+
   conversation   Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@index([conversationId])
   @@index([userId])
   @@map("messages")
+}
+
+model Paper {
+  id            String   @id @default(cuid())
+  userId        String
+  filename      String
+  title         String
+  supabasePath  String?
+  fileSize      Int?
+  createdAt     DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("papers")
 }

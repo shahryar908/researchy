@@ -1,5 +1,7 @@
 # Step1: Access arXiv using URL
 import requests
+import hashlib
+import time
 
 
 def search_arxiv_papers(topic: str, max_results: int = 5) -> dict:
@@ -8,6 +10,16 @@ def search_arxiv_papers(topic: str, max_results: int = 5) -> dict:
         if char in query:
             print(f"Invalid character '{char}' in query: {query}")
             raise ValueError(f"Cannot have character: '{char}' in query: {query}")
+
+    # Create cache key from normalized query
+    cache_key = hashlib.md5(f"{query}_{max_results}".encode()).hexdigest()
+
+    # Check if we have cached results
+    cached_result = _get_from_cache(cache_key)
+    if cached_result:
+        print(f"[CACHE] Using cached arXiv results for: {topic}")
+        return cached_result
+
     url = (
             "http://export.arxiv.org/api/query"
             f"?search_query=all:{query}"
@@ -15,15 +27,38 @@ def search_arxiv_papers(topic: str, max_results: int = 5) -> dict:
             "&sortBy=submittedDate"
             "&sortOrder=descending"
         )
-    print(f"Making request to arXiv API: {url}")
+    print(f"[API] Making request to arXiv API: {url}")
     resp = requests.get(url)
-    
+
     if not resp.ok:
         print(f"ArXiv API request failed: {resp.status_code} - {resp.text}")
         raise ValueError(f"Bad response from arXiv API: {resp}\n{resp.text}")
-    
+
     data = parse_arxiv_xml(resp.text)
+
+    # Store in cache
+    _save_to_cache(cache_key, data)
+
     return data
+
+
+# Simple in-memory cache with timestamps
+_arxiv_cache = {}
+
+def _get_from_cache(cache_key: str):
+    """Retrieve from cache if exists and not expired (10 minutes TTL)"""
+    if cache_key in _arxiv_cache:
+        data, timestamp = _arxiv_cache[cache_key]
+        if time.time() - timestamp < 600:  # 10 minute cache
+            return data
+        else:
+            # Expired, remove it
+            del _arxiv_cache[cache_key]
+    return None
+
+def _save_to_cache(cache_key: str, data: dict):
+    """Save to cache with current timestamp"""
+    _arxiv_cache[cache_key] = (data, time.time())
 
 
 # Step2: Parse XML

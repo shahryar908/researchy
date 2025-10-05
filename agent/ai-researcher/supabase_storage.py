@@ -74,8 +74,8 @@ class SupabaseStorage:
             with open(pdf_path, 'rb') as file:
                 file_content = file.read()
             
-            # Upload to Supabase
-            result = self.supabase.storage.from_(self.bucket_name).upload(
+            # Upload to Supabase (Supabase v2 API)
+            response = self.supabase.storage.from_(self.bucket_name).upload(
                 path=file_path,
                 file=file_content,
                 file_options={
@@ -84,12 +84,20 @@ class SupabaseStorage:
                     "upsert": "true"  # Allow overwriting
                 }
             )
-            
-            if result.path:
-                print(f"Successfully uploaded PDF: {result.path}")
+
+            print(f"DEBUG: Upload response type: {type(response)}")
+            print(f"DEBUG: Upload response: {response}")
+
+            # Check for errors in response
+            if hasattr(response, 'error') and response.error:
+                return False, f"Upload error: {response.error}"
+
+            # Success - response should be a string path or have data
+            if response:
+                print(f"Successfully uploaded PDF to: {file_path}")
                 return True, None
             else:
-                return False, "Upload failed - no path returned"
+                return False, "Upload failed - empty response"
                 
         except Exception as e:
             error_msg = f"Error uploading PDF: {str(e)}"
@@ -110,16 +118,19 @@ class SupabaseStorage:
         try:
             # Create user-specific file path
             file_path = f"{user_id}/{filename}"
-            
-            # Download from Supabase
-            result = self.supabase.storage.from_(self.bucket_name).download(file_path)
-            
-            if result:
-                print(f"Successfully downloaded PDF: {file_path}")
-                return True, result, None
+
+            # Download from Supabase (Supabase v2 API)
+            response = self.supabase.storage.from_(self.bucket_name).download(file_path)
+
+            print(f"DEBUG: Download response type: {type(response)}")
+
+            # Supabase v2 returns bytes directly
+            if response and len(response) > 0:
+                print(f"Successfully downloaded PDF: {file_path} ({len(response)} bytes)")
+                return True, response, None
             else:
-                return False, None, "Download failed - no content returned"
-                
+                return False, None, "Download failed - empty response"
+
         except Exception as e:
             error_msg = f"Error downloading PDF: {str(e)}"
             print(error_msg)
@@ -147,19 +158,50 @@ class SupabaseStorage:
         """Delete PDF from Supabase Storage"""
         try:
             file_path = f"{user_id}/{filename}"
-            
+
             result = self.supabase.storage.from_(self.bucket_name).remove([file_path])
-            
+
             if result:
                 print(f"Successfully deleted PDF: {file_path}")
                 return True, None
             else:
                 return False, "Delete failed"
-                
+
         except Exception as e:
             error_msg = f"Error deleting PDF: {str(e)}"
             print(error_msg)
             return False, error_msg
+
+    def get_signed_url(self, user_id: str, filename: str, expires_in: int = 3600) -> Optional[str]:
+        """
+        Get a signed URL for downloading a PDF
+
+        Args:
+            user_id: User ID for folder organization
+            filename: Name of the file
+            expires_in: URL expiration time in seconds (default 1 hour)
+
+        Returns:
+            Signed URL string or None if failed
+        """
+        try:
+            file_path = f"{user_id}/{filename}"
+
+            response = self.supabase.storage.from_(self.bucket_name).create_signed_url(
+                file_path,
+                expires_in
+            )
+
+            if response and 'signedURL' in response:
+                print(f"Created signed URL for: {file_path}")
+                return response['signedURL']
+            else:
+                print(f"Failed to create signed URL: no signedURL in response")
+                return None
+
+        except Exception as e:
+            print(f"Error creating signed URL: {e}")
+            return None
 
 # Global instance - lazy initialization
 storage = None

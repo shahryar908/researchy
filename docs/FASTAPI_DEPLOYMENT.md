@@ -28,10 +28,14 @@ This guide will help you deploy the FastAPI research agent server to Render.
 | **Name** | `researchy-fastapi` (or your preferred name) |
 | **Region** | Oregon (US West) or closest to your users |
 | **Branch** | `main` |
-| **Root Directory** | Leave empty |
+| **Root Directory** | **Leave empty** (important!) |
 | **Runtime** | `Docker` |
 | **Dockerfile Path** | `fastapi-dockerfile` |
-| **Docker Build Context** | `.` (root) |
+
+**💡 Monorepo Note:**
+- Root Directory must be **empty** so Render can access the entire repository
+- The Dockerfile (`fastapi-dockerfile`) copies files from `agent/ai-researcher/` subdirectory
+- This setup allows Docker to build the FastAPI app from the monorepo structure
 
 ### **3. Environment Variables**
 

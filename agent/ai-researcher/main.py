@@ -115,7 +115,8 @@ tool_node = custom_tool_node
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 model = ChatGoogleGenerativeAI(
-    model="gemini-2.5-pro", 
+    model="gemini-2.5-pro",
+    temprature=0.2,
     api_key=os.getenv("GOOGLE_API_KEY")
 ).bind_tools(tools)
 
@@ -190,7 +191,21 @@ Help users discover groundbreaking research, analyze papers, and create new rese
    - Discuss feasibility and impact
 
 4. **Generation Phase**
-   - Write complete detailed research papers in LaTeX
+   - Write a highly detailed academic research paper:
+
+Write each section step-by-step with the following word counts:
+
+1. Abstract (200-250 words)
+2. Introduction (800-1000 words) - Include background, problem statement, objectives
+3. Literature Review (1200-1500 words) - Analyze each paper, identify gaps
+4. Methodology (800-1000 words) - Research design, data collection, analysis
+5. Results (800-1000 words) - Present findings in detail
+6. Discussion (1000-1200 words) - Interpret results, compare with literature
+7. Conclusion (500-600 words) - Summary, implications, future work
+8. References
+
+Write each section in full detail. Do not summarize. Provide comprehensive analysis and explanation for each part.
+**Formatting Requirements:**
    - Include all sections that standard paper have 
    - Add mathematical equations (proper LaTeX syntax)
    - Format citations with PDF links
@@ -213,18 +228,18 @@ Help users discover groundbreaking research, analyze papers, and create new rese
   \end{document}
 
 **Quality Standards:**
-✓ Always use arXiv as primary source
-✓ Include direct PDF links: [Title](https://arxiv.org/pdf/...)
-✓ Test LaTeX compilation (no syntax errors)
-✓ Use proper academic tone and structure
-✓ Cite all sources appropriately
+- Always use arXiv as primary source
+- Include direct PDF links: [Title](https://arxiv.org/pdf/...)
+- Test LaTeX compilation (no syntax errors)
+- Use proper academic tone and structure
+- Cite all sources appropriately
 
 **Interaction Style:**
 Be conversational and collaborative. Ask clarifying questions. Explain your reasoning. Guide users through the research process step-by-step.
 
 **PDF Generation Response Format:**
 After successfully generating a PDF, ALWAYS respond with:
-"✅ Research paper generated successfully: [FILENAME_HERE.pdf]"
+"[SUCCESS] Research paper generated successfully: [FILENAME_HERE.pdf]"
 Replace [FILENAME_HERE.pdf] with the actual filename returned by the tool.
 
 **Rules:**
@@ -308,23 +323,23 @@ Title:"""
         words = first_message.split()[:4]
         return " ".join(words).title() if words else "Research Conversation"
 
-# Cache conversation history for 30 seconds to avoid repeated HTTP calls
+# Cache conversation history for 5 minutes to reduce HTTP calls
 _conversation_cache = {}
 
 def load_conversation_history(conversation_id: str) -> List[Dict[str, Any]]:
-    """Load conversation history from Express backend with caching"""
+    """Load conversation history from Express backend with extended caching"""
     try:
-        # Check cache first (30 second TTL)
+        # Check cache first (5 minute TTL for better efficiency)
         cache_key = conversation_id
         current_time = time.time()
-        
+
         if cache_key in _conversation_cache:
             cached_data, timestamp = _conversation_cache[cache_key]
-            if current_time - timestamp < 30:  # 30 second cache
-                print(f"Using cached conversation history for: {conversation_id}")
+            if current_time - timestamp < 300:  # 5 minute cache (was 30 seconds)
+                print(f"[CACHE] Using cached conversation history for: {conversation_id}")
                 return cached_data
-        
-        print(f"Loading fresh conversation history for: {conversation_id}")
+
+        print(f"[DB] Loading fresh conversation history for: {conversation_id}")
         
         # Call internal endpoint that doesn't require authentication
         response = requests.get(
@@ -466,32 +481,46 @@ async def chat_stream(request: ChatRequest):
     """
     print(f"DEBUG: Received streaming chat request with user_id: {request.user_id}")
     try:
-        # Use unique thread_id for each request to avoid state conflicts
-        import uuid
-        unique_thread_id = f"{request.conversation_id}_{uuid.uuid4().hex[:8]}"
-        config = {"configurable": {"thread_id": unique_thread_id}}
+        # Use conversation_id directly as thread_id for proper memory persistence
+        # This allows LangGraph's checkpointer to maintain state across messages
+        config = {"configurable": {"thread_id": request.conversation_id}}
         # Import required message types
         from langchain_core.messages import HumanMessage, SystemMessage
         
         # Load conversation history with optimizations
         conversation_history = load_conversation_history(request.conversation_id)
         
-        # Build message history with smart truncation for performance
+        # Build message history with intelligent context management
         messages = []
 
         # Add user context to system prompt
         user_context = f"\n\n**CURRENT USER INFORMATION:**\n- User Name: {request.user_name or 'User'}\n- When generating LaTeX PDFs, use \\author{{{request.user_name or 'User'}}} to credit this user."
         system_prompt_with_context = INITIAL_PROMPT + user_context
 
+        # Smart history management to avoid redundancy
         if len(conversation_history) == 0:
-            # New conversation - start with system prompt
+            # New conversation - include system prompt
             messages.append(SystemMessage(content=system_prompt_with_context))
         else:
-            # Existing conversation - include system prompt
-            messages.append(SystemMessage(content=system_prompt_with_context))
+            # Existing conversation - check if system prompt already exists
+            has_system_message = False
+            for msg in conversation_history:
+                if hasattr(msg, '__class__') and msg.__class__.__name__ == 'SystemMessage':
+                    has_system_message = True
+                    break
 
-            # Include ALL conversation history for complete context
-            messages.extend(conversation_history)
+            if not has_system_message:
+                messages.append(SystemMessage(content=system_prompt_with_context))
+
+            # Conversation summarization for long histories (>30 messages)
+            if len(conversation_history) > 30:
+                print(f"[OPTIMIZE] Using truncated history ({len(conversation_history)} messages)")
+                # Keep first 3 messages (important context) + last 20 messages (recent context)
+                messages.extend(conversation_history[:3])
+                messages.extend(conversation_history[-20:])
+            else:
+                # Include full history for shorter conversations
+                messages.extend(conversation_history)
 
         # Add current user message
         messages.append(HumanMessage(content=request.message))
@@ -635,58 +664,51 @@ async def generate_title(request: TitleRequest):
         return TitleResponse(title=fallback_title)
 
 @app.get("/api/papers/download/{filename}")
-async def download_paper(filename: str):
-    """Download generated PDF paper"""
-    # Check multiple possible locations for the PDF file
-    possible_paths = [
-        Path(f"./output/{filename}"),  # Main output directory (singular)
-        Path(f"./output/{filename}/{filename}"),  # If it's in a subdirectory
-        Path(f"./outputs/{filename}"),  # Alternative outputs directory
-        Path(f"./pdfs/{filename}"),     # PDFs directory
-        Path(f"./{filename}"),          # Current directory
-    ]
-    
-    # Also check if the filename is actually a directory containing the PDF
-    if not filename.endswith('.pdf'):
-        possible_paths.extend([
-            Path(f"./output/{filename}.pdf"),
-            Path(f"./outputs/{filename}.pdf"),
-        ])
-    
-    file_path = None
-    for path in possible_paths:
-        print(f"Checking path: {path.absolute()}")  # Debug logging
-        if path.exists() and path.is_file():
-            file_path = path
-            break
-        # If it's a directory, look for PDF files inside it
-        elif path.exists() and path.is_dir():
-            pdf_files = list(path.glob("*.pdf"))
-            if pdf_files:
-                file_path = pdf_files[0]  # Take the first PDF found
-                break
-    
-    if not file_path or not file_path.exists():
-        # List available files for debugging
-        output_dir = Path("./output")
-        available_files = []
-        if output_dir.exists():
-            available_files = [f.name for f in output_dir.iterdir()]
-        
-        raise HTTPException(
-            status_code=404, 
-            detail=f"File '{filename}' not found. Available files in output directory: {available_files}"
-        )
-    
-    print(f"Serving file: {file_path.absolute()}")  # Debug logging
-    return FileResponse(
-        path=file_path,
-        media_type="application/pdf",
-        filename=filename,
-        headers={
-            "Content-Disposition": f"attachment; filename={filename}"
-        }
-    )
+async def download_paper(filename: str, user_id: str = None):
+    """Download generated PDF paper from Supabase or local storage"""
+    try:
+        # Try Supabase first if user_id is provided
+        if user_id:
+            from supabase_storage import get_storage
+            storage = get_storage()
+
+            if storage:
+                print(f"[FASTAPI] Attempting Supabase download: {user_id}/{filename}")
+                success, content, error = storage.download_pdf(user_id, filename)
+
+                if success and content:
+                    print(f"[FASTAPI] ✓ Downloaded from Supabase: {len(content)} bytes")
+                    from fastapi.responses import Response
+                    return Response(
+                        content=content,
+                        media_type="application/pdf",
+                        headers={"Content-Disposition": f"attachment; filename={filename}"}
+                    )
+                else:
+                    print(f"[FASTAPI] Supabase download failed: {error}")
+
+        # Fallback to local output directory
+        output_dir = Path(__file__).parent / "output"
+        file_path = output_dir / filename
+
+        if file_path.exists():
+            print(f"[FASTAPI] Serving file from local storage: {file_path}")
+            return FileResponse(
+                path=file_path,
+                media_type="application/pdf",
+                filename=filename,
+                headers={"Content-Disposition": f"attachment; filename={filename}"}
+            )
+        else:
+            raise HTTPException(status_code=404, detail="PDF file not found in Supabase or local storage")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error downloading PDF: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to download PDF: {str(e)}")
 
 @app.get("/api/papers/list")
 async def list_papers():
@@ -760,7 +782,7 @@ async def general_exception_handler(request, exc):
 
 if __name__ == "__main__":
     import uvicorn
-    print("🚀 Starting Research Agent API...")
-    print("📝 API Documentation: http://localhost:8000/docs")
-    print("🔍 Health Check: http://localhost:8000/health")
+    print("Starting Research Agent API...")
+    print("API Documentation: http://localhost:8000/docs")
+    print("Health Check: http://localhost:8000/health")
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
