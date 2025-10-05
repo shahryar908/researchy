@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+// CLERK AUTH COMMENTED OUT - Uncomment when ready to use authentication
+// import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { FileText, Download, Trash2, Calendar, Loader2, MessageSquare, Menu, X, Search, ArrowUpDown, HardDrive, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 
@@ -192,6 +193,7 @@ export default function DashboardPage() {
 
             {/* Desktop Auth Buttons */}
             <div className="hidden md:flex items-center gap-4">
+              {/* CLERK AUTH COMMENTED OUT
               <SignedOut>
                 <SignInButton>
                   <button className="px-4 py-2 text-gray-300 hover:text-orange-400 rounded-lg transition-all duration-300 font-medium">
@@ -226,6 +228,10 @@ export default function DashboardPage() {
                   }}
                 />
               </SignedIn>
+              */}
+              <Link href="/chat" className="px-4 py-2 text-gray-300 hover:text-orange-400 rounded-lg transition-colors font-medium">
+                Chat
+              </Link>
             </div>
 
             {/* Mobile menu button */}
@@ -245,6 +251,7 @@ export default function DashboardPage() {
               <div className="flex flex-col space-y-4">
                 {/* Mobile Auth */}
                 <div className="pt-4 border-t border-gray-700">
+                  {/* CLERK AUTH COMMENTED OUT
                   <SignedOut>
                     <div className="flex flex-col space-y-3">
                       <SignInButton>
@@ -271,6 +278,10 @@ export default function DashboardPage() {
                       <UserButton />
                     </div>
                   </SignedIn>
+                  */}
+                  <Link href="/chat" className="px-2 py-1 text-gray-300 hover:text-orange-400 font-medium transition-colors">
+                    Chat
+                  </Link>
                 </div>
               </div>
             </div>

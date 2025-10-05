@@ -1,7 +1,8 @@
 'use client';
 import React, { useState } from "react";
 import Link from "next/link";
-import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+// CLERK AUTH COMMENTED OUT - Uncomment when ready to use authentication
+// import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { MessageSquare, Menu, X, ChevronDown, FileText, Download } from "lucide-react";
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -40,6 +41,7 @@ export default function Home() {
               <Link href="#about" className="text-gray-300 hover:text-orange-400 font-medium transition-colors">
                 About
               </Link>
+              {/* CLERK AUTH COMMENTED OUT
               <SignedIn>
                 <Link href="/chat" className="text-gray-300 hover:text-orange-400 font-medium transition-colors">
                   Try Demo
@@ -52,10 +54,15 @@ export default function Home() {
                   </button>
                 </SignInButton>
               </SignedOut>
+              */}
+              <Link href="/chat" className="text-gray-300 hover:text-orange-400 font-medium transition-colors">
+                Try Demo
+              </Link>
             </div>
             
             {/* Desktop Auth Buttons */}
             <div className="hidden md:flex items-center gap-4">
+              {/* CLERK AUTH COMMENTED OUT
               <SignedOut>
                 <SignInButton>
                   <button className="px-4 py-2 text-gray-300 hover:text-orange-400 rounded-lg transition-all duration-300 font-medium">
@@ -63,8 +70,8 @@ export default function Home() {
                   </button>
                 </SignInButton>
                 <SignUpButton>
-                  <button className="px-6 py-2 text-white rounded-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105" 
-                    style={{ 
+                  <button className="px-6 py-2 text-white rounded-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+                    style={{
                       background: 'linear-gradient(135deg, #ff9a54 0%, #e8844a 100%)'
                     }}
                     onMouseEnter={(e) => {
@@ -82,7 +89,7 @@ export default function Home() {
                 <Link href="/chat" className="px-4 py-2 text-gray-300 hover:text-orange-400 rounded-lg transition-colors font-medium">
                   Dashboard
                 </Link>
-                <UserButton 
+                <UserButton
                   appearance={{
                     elements: {
                       avatarBox: "w-10 h-10 rounded-full ring-2 ring-orange-200 hover:ring-orange-300 transition-all duration-300"
@@ -90,6 +97,10 @@ export default function Home() {
                   }}
                 />
               </SignedIn>
+              */}
+              <Link href="/chat" className="px-4 py-2 text-gray-300 hover:text-orange-400 rounded-lg transition-colors font-medium">
+                Dashboard
+              </Link>
             </div>
 
             {/* Mobile menu button */}
@@ -119,6 +130,7 @@ export default function Home() {
                 <Link href="#about" className="text-gray-300 hover:text-orange-400 font-medium px-2 py-1 transition-colors">
                   About
                 </Link>
+                {/* CLERK AUTH COMMENTED OUT
                 <SignedIn>
                   <Link href="/chat" className="text-gray-300 hover:text-orange-400 font-medium px-2 py-1 transition-colors">
                     Try Demo
@@ -131,9 +143,14 @@ export default function Home() {
                     </button>
                   </SignInButton>
                 </SignedOut>
-                
+                */}
+                <Link href="/chat" className="text-gray-300 hover:text-orange-400 font-medium px-2 py-1 transition-colors">
+                  Try Demo
+                </Link>
+
                 {/* Mobile Auth */}
                 <div className="pt-4 border-t border-gray-700">
+                  {/* CLERK AUTH COMMENTED OUT
                   <SignedOut>
                     <div className="flex flex-col space-y-3">
                       <SignInButton>
@@ -142,8 +159,8 @@ export default function Home() {
                         </button>
                       </SignInButton>
                       <SignUpButton>
-                        <button className="w-full px-4 py-2 text-white rounded-lg font-medium transition-all duration-300" 
-                          style={{ 
+                        <button className="w-full px-4 py-2 text-white rounded-lg font-medium transition-all duration-300"
+                          style={{
                             background: 'linear-gradient(135deg, #ff9a54 0%, #e8844a 100%)'
                           }}
                         >
@@ -160,6 +177,10 @@ export default function Home() {
                       <UserButton />
                     </div>
                   </SignedIn>
+                  */}
+                  <Link href="/chat" className="px-2 py-1 text-gray-300 hover:text-orange-400 font-medium transition-colors">
+                    Dashboard
+                  </Link>
                 </div>
               </div>
             </div>
@@ -189,9 +210,10 @@ export default function Home() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              {/* CLERK AUTH COMMENTED OUT
               <SignUpButton>
                 <button className="group relative px-8 py-4 text-white text-lg font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-orange-500/25"
-                  style={{ 
+                  style={{
                     background: 'linear-gradient(135deg, #ff9a54 0%, #e8844a 100%)'
                   }}
                   onMouseEnter={(e) => {
@@ -205,7 +227,25 @@ export default function Home() {
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
                 </button>
               </SignUpButton>
-              
+              */}
+              <Link href="/chat">
+                <button className="group relative px-8 py-4 text-white text-lg font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-orange-500/25"
+                  style={{
+                    background: 'linear-gradient(135deg, #ff9a54 0%, #e8844a 100%)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, #e8844a 0%, #d9733f 100%)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, #ff9a54 0%, #e8844a 100%)';
+                  }}
+                >
+                  Start Researching Free
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+                </button>
+              </Link>
+
+              {/* CLERK AUTH COMMENTED OUT
               <SignedIn>
                 <Link href="/chat">
                   <button className="px-8 py-4 text-gray-300 hover:text-white text-lg font-semibold rounded-xl border border-gray-600 hover:border-orange-400 transition-all duration-300 transform hover:scale-105 hover:bg-gray-800/50">
@@ -220,6 +260,7 @@ export default function Home() {
                   </button>
                 </SignInButton>
               </SignedOut>
+              */}
             </div>
           </div>
         </div>
@@ -439,9 +480,10 @@ export default function Home() {
             <p className="text-xl text-gray-300 mb-8">
               Ready to revolutionize your research workflow?
             </p>
+            {/* CLERK AUTH COMMENTED OUT
             <SignUpButton>
               <button className="px-8 py-4 text-white text-lg font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-orange-500/25"
-                style={{ 
+                style={{
                   background: 'linear-gradient(135deg, #ff9a54 0%, #e8844a 100%)'
                 }}
                 onMouseEnter={(e) => {
@@ -454,6 +496,22 @@ export default function Home() {
                 Start Researching Now
               </button>
             </SignUpButton>
+            */}
+            <Link href="/chat">
+              <button className="px-8 py-4 text-white text-lg font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-orange-500/25"
+                style={{
+                  background: 'linear-gradient(135deg, #ff9a54 0%, #e8844a 100%)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, #e8844a 0%, #d9733f 100%)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, #ff9a54 0%, #e8844a 100%)';
+                }}
+              >
+                Start Researching Now
+              </button>
+            </Link>
           </div>
         </div>
       </section>
@@ -520,12 +578,19 @@ export default function Home() {
                     <span className="text-gray-300">Community support</span>
                   </div>
                 </div>
-                
+
+                {/* CLERK AUTH COMMENTED OUT
                 <SignUpButton>
                   <button className="w-full px-6 py-3 border border-gray-600 text-gray-300 rounded-xl hover:border-orange-400 hover:text-white transition-all duration-300">
                     Get Started Free
                   </button>
                 </SignUpButton>
+                */}
+                <Link href="/chat">
+                  <button className="w-full px-6 py-3 border border-gray-600 text-gray-300 rounded-xl hover:border-orange-400 hover:text-white transition-all duration-300">
+                    Get Started Free
+                  </button>
+                </Link>
               </div>
             </div>
 
@@ -580,10 +645,11 @@ export default function Home() {
                     <span className="text-gray-300">Export to multiple formats</span>
                   </div>
                 </div>
-                
+
+                {/* CLERK AUTH COMMENTED OUT
                 <SignUpButton>
                   <button className="w-full px-6 py-3 text-white rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-orange-500/25"
-                    style={{ 
+                    style={{
                       background: 'linear-gradient(135deg, #ff9a54 0%, #e8844a 100%)'
                     }}
                     onMouseEnter={(e) => {
@@ -596,6 +662,22 @@ export default function Home() {
                     Start Pro Trial
                   </button>
                 </SignUpButton>
+                */}
+                <Link href="/chat">
+                  <button className="w-full px-6 py-3 text-white rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-orange-500/25"
+                    style={{
+                      background: 'linear-gradient(135deg, #ff9a54 0%, #e8844a 100%)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'linear-gradient(135deg, #e8844a 0%, #d9733f 100%)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'linear-gradient(135deg, #ff9a54 0%, #e8844a 100%)';
+                    }}
+                  >
+                    Start Pro Trial
+                  </button>
+                </Link>
               </div>
             </div>
 
