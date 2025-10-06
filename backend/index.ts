@@ -29,6 +29,7 @@ app.use(cors({
     origin: [
         'http://localhost:3000',
         'https://research-agent-git-main1-shahryar908s-projects.vercel.app',
+        'https://researchy-kyon4uut9-shahryar908s-projects.vercel.app',
         /\.vercel\.app$/,  // Allow all Vercel preview deployments
         /\.ngrok\.io$/,    // Allow ngrok tunnels
         /\.ngrok-free\.app$/,  // Allow ngrok free tier
