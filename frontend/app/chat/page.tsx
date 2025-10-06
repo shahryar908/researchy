@@ -6,8 +6,8 @@ import Sidebar from '../components/Sidebar';
 // import { useUser } from '@clerk/nextjs';
 import Link from 'next/link';
 
-// Force localhost for development
-const API_BASE = 'http://localhost:3001';
+// Use environment variable or fallback to localhost for development
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 // Function to get user-friendly tool descriptions
 const getToolDescription = (toolName: string): string => {

@@ -6,8 +6,8 @@ import { useState, useEffect } from 'react';
 import { FileText, Download, Trash2, Calendar, Loader2, MessageSquare, Menu, X, Search, ArrowUpDown, HardDrive, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 
-// Force localhost for development
-const API_BASE = 'http://localhost:3001';
+// Use environment variable or fallback to localhost for development
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 // Debug: Log the API URL being used
 console.log('[Dashboard] Using API:', API_BASE);
